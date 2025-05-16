@@ -1,54 +1,50 @@
 document.addEventListener('DOMContentLoaded', function() {
-  var signinForm = document.querySelector('.signin');
-  signinForm.classList.add('signin_active');
+  const form = document.getElementById('signin__form');
+  form.classList.add('signin_active');
   
-  var welcomeElement = document.getElementById('welcome');
-  var userIdElement = document.getElementById('user_id');
-  var userId = localStorage.getItem('userId');
-  
-  if(userId) {
-    userIdElement.textContent = userId;
-    welcomeElement.classList.add('welcome_active');
-  }
-});
+  const welcomeElement = document.getElementById('welcome');
+  const userIdElement = document.getElementById('user_id');
+  const userId = localStorage.getItem('userId');
 
-document.getElementById('signin__btn').addEventListener('click', function(event) {
+  function showWelcomeMessage(userId) {
+  userIdElement.textContent = userId;
+  welcomeElement.classList.add('welcome_active');
+}
+
+  if(userId) {
+    showWelcomeMessage(userId);
+  }
+
+form.addEventListener('submit', function(event) {
   event.preventDefault(); // Prevent default form submission
 
-  var login = document.querySelector('[name="login"]').value;
-  var password = document.querySelector('[name="password"]').value;
+  const formData = new FormData(form); 
 
-  var xhr = new XMLHttpRequest();
-  var url = 'https://students.netoservices.ru/nestjs-backend/auth';
+  const xhr = new XMLHttpRequest();
+  const url = 'https://students.netoservices.ru/nestjs-backend/auth';
   xhr.open('POST', url, true);
-  //xhr.setRequestHeader('Content-Type', 'application/json');
+  //xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
 
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
-      if (xhr.status === 200) {
-        var response = JSON.parse(xhr.responseText);
-        console.log(response)
-
+  xhr.responseType = 'json';
+  xhr.onload = function() {
+    if (xhr.status >= 200 && xhr.status < 300) {
+        const response = xhr.response;
+    
         if (response.success) {
-          localStorage.setItem('userId', response.user_id);
-
-          var welcomeElement = document.getElementById('welcome');
-          var userIdElement = document.getElementById('user_id');
-          
-          userIdElement.textContent = response.user_id;
-          welcomeElement.classList.add('welcome_active');
-        } else {
-          console.error('Неверный логин/пароль');
-        }
+              localStorage.setItem('userId', response.user_id)
+              showWelcomeMessage(response.user_id);
+              form.reset();
+              window.location = window.location.href; // Принудительное обновление страницы
       } else {
-        var errorResponse = JSON.parse(xhr.responseText);
-        var errorMessage = errorResponse.error || 'Произошла ошибка на сервере';
-        console.error('Произошла ошибка: ' + errorMessage);
+        alert('Неверный логин/пароль');
       }
+    } else {
+      console.error('Ошибка: ' + xhr.status);
     }
   };
+      
+   // Отправляем объект FormData на сервер
+  xhr.send(formData);
+});
 
-  var data = JSON.stringify({ login: login, password: password });
-  xhr.send(data);
-  console.log(data)
 });
